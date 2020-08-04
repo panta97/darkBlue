@@ -349,11 +349,23 @@ function runLevel(level, Display) {
   });
 }
 
+
+function displayLives(lives) {
+  let livesElement = document.getElementsByClassName('lives')[0];
+  let livesText = '';
+  for(let i=0; i<lives; i++) livesText += '❤️';
+  livesElement.textContent = livesText;
+}
+
 async function runGame(plans, Display) {
+  let lives = 3;
   for (let level = 0; level < plans.length;) {
+    displayLives(lives);
     let status = await runLevel(new Level(plans[level]),
                                 Display);
     if (status == "won") level++;
+    if (status === "lost") lives--;
+    if (lives === 0 && status === "lost") level = 0, lives = 3;
   }
   console.log("You've won!");
 }
