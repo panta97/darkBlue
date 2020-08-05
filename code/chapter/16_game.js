@@ -306,8 +306,14 @@ function trackKeys(keys) {
       event.preventDefault();
     }
   }
-  window.addEventListener("keydown", track);
-  window.addEventListener("keyup", track);
+  down.registerHandlers = function() {
+    window.addEventListener("keydown", track);
+    window.addEventListener("keyup", track);
+  }
+  down.unregisterHandlers = function() {
+    window.removeEventListener("keydown", track);
+    window.removeEventListener("keyup", track);
+  }
   return down;
 }
 
@@ -331,10 +337,14 @@ function runLevel(level, Display) {
   let display = new Display(document.body, level);
   let state = State.start(level);
   let ending = 1;
+  let paused = false;
+
   return new Promise(resolve => {
-    runAnimation(time => {
+    let frameFunc = (time) => {
+      arrowKeys.registerHandlers();
       state = state.update(time, arrowKeys);
       display.syncState(state);
+      if (paused) return false;
       if (state.status == "playing") {
         return true;
       } else if (ending > 0) {
@@ -342,10 +352,18 @@ function runLevel(level, Display) {
         return true;
       } else {
         display.clear();
+        arrowKeys.unregisterHandlers();
         resolve(state.status);
         return false;
       }
+    };
+    window.addEventListener("keydown", (event) => {
+      if(event.key === "Escape") {
+        paused = paused ? false : true;
+        if(!paused) runAnimation(frameFunc);
+      }
     });
+    runAnimation(frameFunc);
   });
 }
 
