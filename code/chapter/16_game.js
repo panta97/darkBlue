@@ -367,6 +367,69 @@ function runLevel(level, Display) {
   });
 }
 
+class Monster {
+  constructor(pos, speed, direction) {
+    this.pos = pos;
+    this.speed = speed;
+    this.direction = direction;
+  }
+
+  get type() { return "monster"; }
+
+  static create(pos) {
+    return new Monster(pos.plus(new Vec(0, -1)), new Vec(2,0));
+  }
+
+  update(time, state) {
+    let newPos = this.pos.plus(this.speed.times(time));
+    let player = state.actors.filter(a => a.type === 'player')[0];
+    let newDir;
+
+    if(this.pos.x < newPos.x) {
+      newDir = 'R';
+    } else {
+      newDir = 'L';
+    }
+
+    if(Math.round(player.pos.y + player.size.y) === this.pos.y + this.size.y
+      && player.pos.x < this.pos.x) {
+      newDir = 'L';
+    }
+    
+    if(Math.round(player.pos.y + player.size.y) === this.pos.y + this.size.y
+    && player.pos.x > this.pos.x) {
+      newDir = 'R';
+    }
+    if(!this.direction) this.direction = 'R';
+    let times = this.direction !== newDir ? -1 : 1;
+    
+    if (!state.level.touches(newPos, this.size, "wall")) {
+      return new Monster(newPos, this.speed.times(times), newDir);
+    } else {
+      return new Monster(this.pos, this.speed.times(-1), newDir === 'R' ? 'L' : 'R');
+    }
+  }
+
+
+  collide(state) {
+    let player = state.actors.filter(a => a.type === 'player')[0];
+    if (player.pos.y + player.size.y > this.pos.y &&
+      player.pos.y + player.size.y < this.pos.y + .1 &&
+      player.pos.x > this.pos.x - player.size.x &&
+      player.pos.x + player.size.x < this.pos.x + this.size.x + player.size.x) {
+      let filtered = state.actors.filter(a => a != this);
+      return new State(state.level, filtered, state.status);
+    } else {
+      return new State(state.level, state.actors, "lost");
+    }
+  }
+}
+
+Monster.prototype.size = new Vec(1.2, 2);
+
+levelChars["M"] = Monster;
+
+
 
 function displayLives(lives) {
   let livesElement = document.getElementsByClassName('lives')[0];
